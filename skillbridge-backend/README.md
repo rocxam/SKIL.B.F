@@ -33,14 +33,16 @@ Install these before running the project:
 - Node.js 18 or newer
 - npm
 - MariaDB or MySQL
-- A database user. For this local setup, the project uses:
+- A database user.
+
+For local development, the backend recommends a non-root database user such as:
 
 ```text
-DB_USER=root
-DB_PASSWORD=root
+DB_USER=skillbridge_user
+DB_PASSWORD=your_password_here
 ```
 
-If your local MySQL root password is different, update `.env`.
+If you want to use root instead, update `.env` accordingly.
 
 ## Folder Structure
 
@@ -71,19 +73,29 @@ Create a local environment file:
 cp .env.example .env
 ```
 
-The local `.env` should look like this for root/root MariaDB:
+The local `.env` should look like this for a non-root MySQL user:
 
 ```env
 PORT=5000
+DB_DRIVER=mysql
 DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=root
+DB_PORT=3306
+DB_USER=skillbridge_user
+DB_PASSWORD=your_password_here
 DB_NAME=skillbridge_db
 JWT_SECRET=skillbridge_local_development_secret_change_before_production
 JWT_EXPIRES_IN=1d
-FRONTEND_URL=http://localhost:5173
-CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+FRONTEND_URL=http://localhost:5174
+CORS_ORIGINS=http://localhost:5174,http://127.0.0.1:5174
 ```
+
+If you do not already have a dedicated user, create it with root credentials:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS skillbridge_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER IF NOT EXISTS 'skillbridge_user'@'localhost' IDENTIFIED BY 'YourPassword123!'; GRANT ALL PRIVILEGES ON skillbridge_db.* TO 'skillbridge_user'@'localhost'; FLUSH PRIVILEGES;"
+```
+
+Then use `skillbridge_user` in `.env`.
 
 ## Create and Seed the Database
 
@@ -94,11 +106,13 @@ mysql -u root -p < database/schema.sql
 mysql -u root -p < database/seed.sql
 ```
 
-When prompted for the password, enter:
+If you created `skillbridge_user`, you can also run these with that user after the database exists:
 
-```text
-root
+```bash
+mysql -u skillbridge_user -p skillbridge_db < database/seed.sql
 ```
+
+When prompted for the password, enter the password configured in `.env`.
 
 `schema.sql` creates the `skillbridge_db` database and all tables. `seed.sql` inserts sample users, categories, courses, lessons, assignments, enrollments, and submissions.
 
@@ -152,17 +166,13 @@ Password123!
 
 ### Option 1: Use MariaDB/MySQL CLI
 
-Open the database:
+Open the database using the account configured in `.env`:
 
 ```bash
-mysql -u root -p skillbridge_db
+mysql -u skillbridge_user -p skillbridge_db
 ```
 
-Enter password:
-
-```text
-root
-```
+Enter the password from your `.env` file when prompted.
 
 Useful queries:
 
@@ -199,8 +209,8 @@ Connect with:
 
 ```text
 Host: localhost
-User: root
-Password: root
+User: skillbridge_user
+Password: <your password from .env>
 Database: skillbridge_db
 ```
 

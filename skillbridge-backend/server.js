@@ -18,7 +18,9 @@ const PORT = process.env.PORT || 5000;
 
 const defaultOrigins = [
   'http://localhost:5173',
-  'http://127.0.0.1:5173'
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174'
 ];
 
 const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || defaultOrigins.join(','))
@@ -28,15 +30,17 @@ const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || 
 
 const corsOptions = {
   origin(origin, callback) {
-    // Tools like curl and mobile apps may send no Origin header. Browsers do send one.
+    // Browsers send an Origin header. Non-browser tools may omit it.
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
     return callback(new Error(`CORS blocked request from origin: ${origin}`));
   },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
@@ -76,14 +80,18 @@ app.use((err, req, res, next) => {
   return next();
 });
 
-app.listen(PORT, async () => {
+async function startServer() {
   try {
+    await db.initialize();
     await db.testConnection();
-    console.log(`SkillBridge backend running on http://localhost:${PORT}`);
-    console.log('Database connection is available.');
+    app.listen(PORT, () => {
+      console.log(`SkillBridge backend running on http://localhost:${PORT}`);
+      console.log('Database connection is available.');
+    });
   } catch (error) {
-    console.error('Database connection failed:', error.message);
-    console.log(`SkillBridge backend running on http://localhost:${PORT}`);
-    console.log('Update the backend .env file with valid MySQL credentials to enable data-backed routes.');
+    console.error('Server startup failed:', error.message);
+    process.exit(1);
   }
-});
+}
+
+startServer();
