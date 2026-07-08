@@ -9,7 +9,7 @@ function authenticateToken(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'skillbridge_local_development_secret_change_before_production');
     req.user = decoded;
     return next();
   } catch (error) {

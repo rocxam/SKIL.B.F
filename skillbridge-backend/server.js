@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const db = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const courseRoutes = require('./routes/courseRoutes');
@@ -50,6 +51,15 @@ app.get('/', (req, res) => {
   res.json({ message: 'SkillBridge API is running.' });
 });
 
+app.get('/health', async (req, res) => {
+  try {
+    await db.testConnection();
+    res.json({ status: 'ok' });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
@@ -66,6 +76,14 @@ app.use((err, req, res, next) => {
   return next();
 });
 
-app.listen(PORT, () => {
-  console.log(`SkillBridge backend running on http://localhost:${PORT}`);
+app.listen(PORT, async () => {
+  try {
+    await db.testConnection();
+    console.log(`SkillBridge backend running on http://localhost:${PORT}`);
+    console.log('Database connection is available.');
+  } catch (error) {
+    console.error('Database connection failed:', error.message);
+    console.log(`SkillBridge backend running on http://localhost:${PORT}`);
+    console.log('Update the backend .env file with valid MySQL credentials to enable data-backed routes.');
+  }
 });

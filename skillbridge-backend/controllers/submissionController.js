@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { toStoredPath } = require('../middleware/uploadMiddleware');
 const { findCourse, canManageCourse } = require('./courseController');
 const { findAssignment } = require('./assignmentController');
 const { studentIsEnrolled } = require('./lessonController');
@@ -25,14 +26,14 @@ async function submitAssignment(req, res) {
         `UPDATE submissions
          SET file_path = COALESCE(?, file_path), comments = ?, status = 'submitted', submitted_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [req.file ? req.file.path : null, req.body.comments || null, existing[0].id]
+        [toStoredPath(req.file), req.body.comments || null, existing[0].id]
       );
       return res.json({ message: 'Submission updated.', submission_id: existing[0].id });
     }
 
     const result = await db.query(
       'INSERT INTO submissions (assignment_id, student_id, file_path, comments) VALUES (?, ?, ?, ?)',
-      [req.params.assignmentId, req.user.id, req.file ? req.file.path : null, req.body.comments || null]
+      [req.params.assignmentId, req.user.id, toStoredPath(req.file), req.body.comments || null]
     );
 
     return res.status(201).json({ message: 'Assignment submitted.', submission_id: result.insertId });

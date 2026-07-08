@@ -9,6 +9,7 @@ export default function EditCourse() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(null);
+  const [coverImage, setCoverImage] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -21,7 +22,18 @@ export default function EditCourse() {
   async function handleSubmit(event) {
     event.preventDefault();
     try {
-      await updateCourse(id, form);
+      const data = new FormData();
+      data.append('title', form.title);
+      data.append('description', form.description);
+      data.append('category_id', form.category_id || '');
+      data.append('level', form.level || 'Beginner');
+      data.append('duration', form.duration || '');
+      data.append('status', form.status || 'active');
+      if (coverImage) {
+        data.append('cover_image', coverImage);
+      }
+
+      await updateCourse(id, data);
       navigate('/teacher/courses');
     } catch (apiError) {
       setError(apiError.response?.data?.message || 'Could not update course.');
@@ -65,6 +77,10 @@ export default function EditCourse() {
           <div className="col-12">
             <label className="form-label">Description</label>
             <textarea className="form-control" rows="5" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+          </div>
+          <div className="col-12">
+            <label className="form-label">Replace cover image</label>
+            <input className="form-control" type="file" accept="image/*" onChange={(e) => setCoverImage(e.target.files[0])} />
           </div>
         </div>
         <button className="btn btn-primary mt-3">Update course</button>

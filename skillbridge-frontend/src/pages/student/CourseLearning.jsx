@@ -21,7 +21,7 @@ export default function CourseLearning() {
       .then(([courseResponse, lessonResponse, enrollmentResponse]) => {
         setCourse(courseResponse.data);
         setLessons(lessonResponse.data);
-        const foundEnrollment = enrollmentResponse.data.find((item) => Number(item.id) === Number(id));
+        const foundEnrollment = enrollmentResponse.data.find((item) => Number(item.course_id) === Number(id));
         setEnrollment(foundEnrollment);
         setProgress(foundEnrollment?.progress_percentage || 0);
       })

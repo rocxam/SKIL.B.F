@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { toStoredPath } = require('../middleware/uploadMiddleware');
 
 async function findCourse(id) {
   const courses = await db.query('SELECT * FROM courses WHERE id = ?', [id]);
@@ -78,7 +79,7 @@ async function createCourse(req, res) {
     const result = await db.query(
       `INSERT INTO courses (teacher_id, category_id, title, description, level, duration, cover_image)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.id, category_id || null, title, description, level || 'Beginner', duration || null, req.file ? req.file.path : null]
+      [req.user.id, category_id || null, title, description, level || 'Beginner', duration || null, toStoredPath(req.file)]
     );
 
     const course = await findCourse(result.insertId);
@@ -111,7 +112,7 @@ async function updateCourse(req, res) {
         level || course.level,
         duration || course.duration,
         status || course.status,
-        req.file ? req.file.path : null,
+        toStoredPath(req.file),
         req.params.id
       ]
     );

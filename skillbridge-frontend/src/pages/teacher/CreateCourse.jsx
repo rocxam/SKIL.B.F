@@ -7,6 +7,7 @@ export default function CreateCourse() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({ title: '', description: '', category_id: '', level: 'Beginner', duration: '' });
+  const [coverImage, setCoverImage] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -18,7 +19,17 @@ export default function CreateCourse() {
     setError('');
 
     try {
-      await createCourse(form);
+      const data = new FormData();
+      data.append('title', form.title);
+      data.append('description', form.description);
+      data.append('category_id', form.category_id);
+      data.append('level', form.level);
+      data.append('duration', form.duration);
+      if (coverImage) {
+        data.append('cover_image', coverImage);
+      }
+
+      await createCourse(data);
       navigate('/teacher/courses');
     } catch (apiError) {
       setError(apiError.response?.data?.message || 'Could not create course.');
@@ -57,6 +68,10 @@ export default function CreateCourse() {
           <div className="col-12">
             <label className="form-label">Description</label>
             <textarea className="form-control" rows="5" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+          </div>
+          <div className="col-12">
+            <label className="form-label">Cover image</label>
+            <input className="form-control" type="file" accept="image/*" onChange={(e) => setCoverImage(e.target.files[0])} />
           </div>
         </div>
         <button className="btn btn-primary mt-3">Save course</button>

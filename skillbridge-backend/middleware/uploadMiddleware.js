@@ -2,6 +2,7 @@ const path = require('path');
 const multer = require('multer');
 
 const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.png', '.jpg', '.jpeg', '.gif', '.txt'];
+const projectRoot = path.join(__dirname, '..');
 
 function createStorage(folder) {
   return multer.diskStorage({
@@ -24,6 +25,14 @@ function fileFilter(req, file, cb) {
   return cb(null, true);
 }
 
+function toStoredPath(file) {
+  if (!file) {
+    return null;
+  }
+
+  return path.relative(projectRoot, file.path).replace(/\\/g, '/');
+}
+
 const uploadMaterial = multer({
   storage: createStorage('materials'),
   fileFilter,
@@ -38,5 +47,6 @@ const uploadSubmission = multer({
 
 module.exports = {
   uploadMaterial,
-  uploadSubmission
+  uploadSubmission,
+  toStoredPath
 };

@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { toStoredPath } = require('../middleware/uploadMiddleware');
 const { findCourse, canManageCourse } = require('./courseController');
 const { canAccessCourse } = require('./lessonController');
 
@@ -26,7 +27,7 @@ async function createAssignment(req, res) {
     const result = await db.query(
       `INSERT INTO assignments (course_id, teacher_id, title, instructions, due_date, total_marks, attachment)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [course_id, req.user.id, title, instructions, due_date || null, total_marks || 100, req.file ? req.file.path : null]
+      [course_id, req.user.id, title, instructions, due_date || null, total_marks || 100, toStoredPath(req.file)]
     );
 
     return res.status(201).json({ message: 'Assignment created.', assignment_id: result.insertId });
@@ -97,7 +98,7 @@ async function updateAssignment(req, res) {
         due_date || assignment.due_date,
         total_marks || assignment.total_marks,
         status || assignment.status,
-        req.file ? req.file.path : null,
+        toStoredPath(req.file),
         req.params.id
       ]
     );

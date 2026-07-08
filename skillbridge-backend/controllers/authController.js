@@ -10,7 +10,7 @@ function createToken(user) {
       email: user.email,
       role: user.role
     },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET || 'skillbridge_local_development_secret_change_before_production',
     { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
   );
 }

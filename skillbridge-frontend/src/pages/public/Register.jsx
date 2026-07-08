@@ -33,27 +33,27 @@ export default function Register() {
         <form onSubmit={handleSubmit}>
           <div className="row g-3">
             <div className="col-md-6">
-              <label className="form-label">Full name</label>
-              <input className="form-control" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
+              <label className="form-label" htmlFor="full_name">Full name</label>
+              <input id="full_name" name="full_name" className="form-control" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
             </div>
             <div className="col-md-6">
-              <label className="form-label">Phone</label>
-              <input className="form-control" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <label className="form-label" htmlFor="phone">Phone</label>
+              <input id="phone" name="phone" className="form-control" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
             <div className="col-md-6">
-              <label className="form-label">Email</label>
-              <input className="form-control" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              <label className="form-label" htmlFor="email">Email</label>
+              <input id="email" name="email" className="form-control" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
             <div className="col-md-6">
-              <label className="form-label">Role</label>
-              <select className="form-select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+              <label className="form-label" htmlFor="role">Role</label>
+              <select id="role" name="role" className="form-select" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher/Lecturer</option>
               </select>
             </div>
             <div className="col-12">
-              <label className="form-label">Password</label>
-              <input className="form-control" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              <label className="form-label" htmlFor="password">Password</label>
+              <input id="password" name="password" className="form-control" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
             </div>
           </div>
           <button className="btn btn-primary w-100 mt-3" disabled={submitting}>{submitting ? 'Creating account...' : 'Register'}</button>
