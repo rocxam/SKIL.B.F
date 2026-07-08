@@ -5,6 +5,7 @@ import PublicLayout from './layouts/PublicLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import Home from './pages/public/Home';
 import About from './pages/public/About';
+import Poster from './pages/public/Poster';
 import BrowseCourses from './pages/public/BrowseCourses';
 import CourseDetails from './pages/public/CourseDetails';
 import Login from './pages/public/Login';
@@ -36,6 +37,7 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/poster" element={<Poster />} />
           <Route path="/courses" element={<BrowseCourses />} />
           <Route path="/courses/:id" element={<CourseDetails />} />
           <Route path="/login" element={<Login />} />

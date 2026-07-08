@@ -27,6 +27,120 @@ body {
   color: #fff;
 }
 
+.poster-page {
+  padding-top: 32px;
+  padding-bottom: 48px;
+}
+
+.poster-header {
+  background: linear-gradient(135deg, rgba(36, 87, 197, 0.92), rgba(27, 138, 90, 0.92));
+  color: #fff;
+  border-radius: 24px;
+  padding: 40px 30px;
+  margin-bottom: 32px;
+}
+
+.poster-header-content {
+  max-width: 880px;
+}
+
+.poster-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: #f7f7ff;
+  padding: 8px 18px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 1.1rem;
+}
+
+.poster-header h1 {
+  font-size: clamp(2.85rem, 4vw, 4.5rem);
+  margin-bottom: 0.75rem;
+}
+
+.poster-header .lead {
+  max-width: 760px;
+}
+
+.poster-keypoints {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 18px;
+  margin-top: 26px;
+}
+
+.poster-keypoints div {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.poster-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+
+.poster-card {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #dfe5ef;
+  padding: 26px;
+  box-shadow: 0 16px 40px rgba(23, 32, 51, 0.08);
+}
+
+.poster-card-emphasis {
+  grid-row: span 2;
+  background: linear-gradient(180deg, #f7f9ff 0%, #eef4ff 100%);
+}
+
+.poster-card-accent {
+  background: linear-gradient(135deg, #2457c5, #1b8a5a);
+  color: #fff;
+}
+
+.poster-card-accent h2,
+.poster-card-accent p,
+.poster-card-accent li {
+  color: #fff;
+}
+
+.poster-card-team {
+  grid-column: span 2;
+}
+
+.poster-team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.poster-card ul {
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
+.poster-card ul li {
+  margin-bottom: 0.7rem;
+}
+
+@media (max-width: 960px) {
+  .poster-keypoints {
+    grid-template-columns: 1fr;
+  }
+
+  .poster-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .poster-card-emphasis {
+    grid-row: auto;
+  }
+}
+
 .hero-band {
   background:
     linear-gradient(rgba(15, 39, 87, 0.78), rgba(15, 39, 87, 0.72)),

@@ -29,6 +29,7 @@ export default function Navbar() {
         <div className="collapse navbar-collapse" id="mainNavbar">
           <div className="navbar-nav me-auto">
             <NavLink className="nav-link" to="/courses">Courses</NavLink>
+            <NavLink className="nav-link" to="/poster">Poster</NavLink>
             <NavLink className="nav-link" to="/about">About</NavLink>
             {user && <NavLink className="nav-link" to={dashboardPath(user.role)}>Dashboard</NavLink>}
           </div>
