@@ -17,14 +17,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const defaultOrigins = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:5174',
-  'http://127.0.0.1:5174'
-];
-
-const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || defaultOrigins.join(','))
+const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -98,7 +91,7 @@ async function startServer() {
     await db.initialize();
     await db.testConnection();
     app.listen(PORT, () => {
-      console.log(`SkillBridge backend running on http://localhost:${PORT}`);
+      console.log(`SkillBridge backend running on port ${PORT}`);
       console.log('Database connection is available.');
     });
   } catch (error) {

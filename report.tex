@@ -1,0 +1,499 @@
+% SkillBridge Project Report
+\documentclass[12pt,a4paper]{report}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{pdfpages}
+\usepackage{setspace}
+
+% Page geometry
+\geometry{left=30mm,right=25mm,top=25mm,bottom=25mm}
+\onehalfspacing
+
+% Header/footer
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{SkillBridge}
+\rhead{Final Year Project Report}
+\cfoot{\thepage}
+
+% Listings config
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\lstset{
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  captionpos=b
+}
+
+% Title formatting
+\titleformat{\chapter}[block]{\Large\bfseries}{\thechapter.}{1em}{}
+
+% Document
+\begin{document}
+
+% Cover Page
+\begin{titlepage}
+  \begin{center}
+    \vspace*{1cm}
+    {\LARGE \textbf{SkillBridge}}\\[0.5cm]
+    {\Large A full-stack eLearning platform}\
+    \vspace{2cm}
+
+    \textbf{Author:} [To Be Completed]\\[0.2cm]
+    \textbf{Student ID:} [To Be Completed]\\[0.2cm]
+    \textbf{University:} [To Be Completed]\\[0.2cm]
+    \textbf{Faculty:} [To Be Completed]\\[0.2cm]
+    \textbf{Department:} [To Be Completed]\\[0.2cm]
+    \textbf{Course:} [To Be Completed]\\[0.2cm]
+    \textbf{Supervisor:} [To Be Completed]\\[0.2cm]
+    \vfill
+    \textbf{Date:} \today
+  \end{center}
+\end{titlepage}
+
+% Declaration
+\chapter*{Declaration}
+I declare that this project report is my original work and has not been submitted to any other institution for academic credit. All sources used have been acknowledged.
+
+\vspace{2em}
+Signature: \hrulefill 
+
+\clearpage
+
+% Approval
+\chapter*{Approval}
+This project report has been examined and approved by the undersigned.
+
+\vspace{2em}
+Examiner: \hrulefill \\
+Date: \hrulefill
+
+\clearpage
+
+% Acknowledgements
+\chapter*{Acknowledgements}
+I would like to acknowledge the guidance and support of my supervisor [To Be Completed], colleagues, and the open-source community whose software and documentation made this project possible.
+
+\clearpage
+
+% Abstract
+\begin{abstract}
+SkillBridge is a full-stack eLearning prototype that demonstrates course creation, lesson authoring, assignment submission, grading, and role-based access control. The system comprises a React + Vite frontend and a Node.js + Express backend with MySQL/MariaDB persistence. This report documents the analysis, design, implementation, testing, and deployment considerations for the project. Sections include system architecture, database design, API specification, implementation details, testing results, challenges encountered, and deployment guidelines. Where project-specific details could not be determined from the repository, sections are marked "[To Be Completed]".
+\end{abstract}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\clearpage
+
+% Acronyms
+\chapter*{List of Acronyms}
+\begin{tabular}{lp{11cm}}
+API & Application Programming Interface\\
+JWT & JSON Web Token\\
+DB & Database\\
+UI & User Interface\\
+UX & User Experience\\
+CLI & Command Line Interface\\
+Vite & A frontend build tool (Vite)\\
+\end{tabular}
+
+\clearpage
+
+% Chapter 1
+\chapter{Introduction}
+\section{Background}
+SkillBridge is organized as two separate folders: `skillbridge-backend` (Express server) and `skillbridge-frontend` (React + Vite). The system implements user registration and login, role-based dashboards, course and lesson management, assignment submission, grading, and admin functionalities.
+
+\section{Problem Statement}
+Students and teachers require a practical project that demonstrates full-stack development, including authentication, persistent storage, file uploads, and role-based workflows. The project addresses this by providing a lightweight eLearning platform useful for demonstrations and hands-on learning.
+
+\section{Objectives}
+\subsection{General Objective}
+To design and implement a functional, database-backed eLearning prototype demonstrating modern full-stack development patterns.
+
+\subsection{Specific Objectives}
+\begin{itemize}
+  \item Implement secure user authentication and session management using JWT.
+  \item Provide role-based access control for students, teachers, and admins.
+  \item Allow teachers to create and manage courses, lessons, and assignments.
+  \item Allow students to enroll, view lessons, upload submissions, and view grades.
+  \item Persist application data in MySQL/MariaDB and support SQLite fallback.
+\end{itemize}
+
+\section{Scope}
+This report documents only features and implementation present in the repository. Optional features or external integrations not present are not covered.
+
+\section{Significance}
+The project serves as a practical learning aid for software engineering students to explore real-world patterns including REST APIs, frontend routing, file upload handling, database design, and authentication.
+
+\section{Limitations}
+\begin{itemize}
+  \item No automated test suite found in the repository; tests are manual.
+  \item Production-grade deployment scripts are not present (containerization, CI/CD) — described as recommendations.
+\end{itemize}
+
+\section{Assumptions}
+If environment-specific values are missing, the default configuration in `.env.example` is used. Author and institutional details are left as placeholders.
+
+\clearpage
+
+% Chapter 2
+\chapter{Literature Review}
+\section{Existing systems}
+This project is comparable to learning platforms like Moodle and Canvas at a minimal demonstration level. Unlike full-featured LMS solutions, SkillBridge focuses on core workflows without enterprise features.
+
+\section{Related technologies}
+React, Node.js, Express, MySQL, JWT and Bootstrap are industry-standard tools for web application development and were selected for their simplicity and documentation availability.
+
+\section{Advantages and disadvantages}
+The stack allows rapid development and clear separation between client and server. The disadvantage is that scaling, monitoring, and production hardening require additional effort.
+
+\section{Why this solution was chosen}
+Chosen for simplicity, community support, and suitability for an academic demonstration project.
+
+\clearpage
+
+% Chapter 3
+\chapter{System Analysis and Design}
+\section{Requirements gathering}
+Requirements were derived from implemented routes and frontend pages: user auth, course CRUD, lesson management, enrollment, assignments, and submissions.
+
+\section{Functional Requirements}
+\begin{itemize}
+  \item User registration and login (auth endpoints exist)
+  \item Course and lesson CRUD for teachers
+  \item Enrollment endpoints for students
+  \item Assignment creation and submission
+  \item Admin statistics and management
+\end{itemize}
+
+\section{Non-functional Requirements}
+\begin{itemize}
+  \item Use JSON over HTTP for API communication
+  \item Support CORS for frontend development
+  \item Persist data reliably in MySQL/MariaDB (or SQLite)
+\end{itemize}
+
+\section{Use Case Diagram}
+Figure \ref{fig:usecase} is a placeholder. The actual diagram should be provided in the appendix as a PDF or image.
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox[c][6cm][c]{0.8\textwidth}{\centering Use case diagram placeholder.}}
+  \caption{Use case diagram (placeholder).}
+  \label{fig:usecase}
+\end{figure}
+
+\section{Use Case Descriptions}
+\begin{itemize}
+  \item Register: Public users can register via `/api/auth/register`.
+  \item Login: Users authenticate via `/api/auth/login` to receive a JWT.
+  \item Teacher: Create courses (`POST /api/courses`), add lessons (`POST /api/lessons`), create assignments (`POST /api/assignments`).
+  \item Student: Enroll (`POST /api/enrollments/:courseId`), submit assignment (`POST /api/submissions/:assignmentId`).
+  \item Admin: Manage users and categories (`/api/admin/*`).
+\end{itemize}
+
+\section{Activity and Sequence Diagrams}
+Placeholders are provided; include detailed diagrams in Appendix if required.
+
+\section{Class Diagram}
+This project follows a functional module layout rather than strict OO classes; React components and Express controllers are the main structural units. A component-level diagram is recommended in the Appendix.
+
+\section{ER Diagram and Database Design}
+The main tables (as inferred from `config/db.js`) include `users`, `course_categories`, `courses`, `lessons`, `lesson_materials`, `enrollments`, `assignments`, `submissions`.
+
+\begin{figure}[H]
+  \centering
+  \fbox{\parbox[c][6cm][c]{0.8\textwidth}{\centering ER diagram placeholder.}}
+  \caption{ER diagram (placeholder).}
+  \label{fig:er}
+\end{figure}
+
+\subsection{Schema excerpts}
+The database helper in `skillbridge-backend/config/db.js` defines the schema. Key CREATE TABLE statements (abridged):
+
+\begin{lstlisting}[caption={Users table (excerpt)}]
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  full_name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  phone VARCHAR(255),
+  password VARCHAR(255) NOT NULL,
+  role VARCHAR(255) NOT NULL DEFAULT 'student',
+  status VARCHAR(255) NOT NULL DEFAULT 'active',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Courses table (excerpt)}]
+CREATE TABLE IF NOT EXISTS courses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  teacher_id INT NOT NULL,
+  category_id INT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  level VARCHAR(255) DEFAULT 'Beginner',
+  status VARCHAR(255) NOT NULL DEFAULT 'active',
+  FOREIGN KEY (teacher_id) REFERENCES users(id),
+  FOREIGN KEY (category_id) REFERENCES course_categories(id)
+);
+\end{lstlisting}
+
+\section{System Architecture}
+SkillBridge uses a classic client-server architecture: a React frontend consumes a REST API served by Express. The database is accessed by the server using `mysql2` (or SQLite) and controllers implement business logic.
+
+\section{Component Diagram}
+Key components:
+\begin{itemize}
+  \item Frontend: React components, `AuthContext`, service layer (`src/services/*`).
+  \item Backend: Express app, controllers, middleware (auth, role checks), database helper.
+  \item Database: MySQL/MariaDB (primary), SQLite optional.
+\end{itemize}
+
+\section{Deployment Architecture}
+Local development runs frontend (Vite) on `5174` and backend (Express) on `5000`. For production, configure `VITE_API_URL` to point to the deployed API and serve the frontend `dist` content via static hosting.
+
+\section{Data Flow and Navigation}
+Data flows from the frontend service layer via Axios to backend `/api/*` endpoints. The `AuthContext` stores the JWT in `localStorage` and attaches it to requests.
+
+\clearpage
+
+% Chapter 4
+\chapter{System Implementation}
+\section{Initial project setup}
+The repository contains two main folders: `skillbridge-backend` and `skillbridge-frontend`. Each has its own `package.json`. Backend uses `nodemon` for development; frontend uses Vite.
+
+\section{Environment configuration}
+The backend ships a `.env.example` with database and JWT settings. The frontend uses `import.meta.env.VITE_API_URL` for its API base URL.
+
+\section{Folder structure}
+(See `Project Structure` earlier and Appendix A for a full tree.)
+
+\section{Frontend implementation}
+Key parts:
+\begin{itemize}
+  \item `src/context/AuthContext.jsx` manages auth state, login, register, and token storage.
+  \item `src/services/api.js` configures Axios with an interceptor to attach the JWT from `localStorage`.
+  \item Pages: home, browse courses, course details, login, register, and role-specific dashboards under `pages/`.
+  \item Navbar includes `Logo` component and links to `Poster` (newly added), `Courses`, and `About`.
+\end{itemize}
+
+\section{Backend implementation}
+Key parts:
+\begin{itemize}
+  \item `server.js` sets up Express, CORS, static uploads, routes, and starts the server after `db.initialize()` and `db.testConnection()`.
+  \item Routes are defined under `routes/` and delegate to `controllers/`.
+  \item `config/db.js` handles database connection, auto-creation of schema, and query helpers.
+  \item Middleware includes authentication (`authMiddleware.js`) and role checks (`roleMiddleware.js`).
+\end{itemize}
+
+\section{Database implementation}
+Discussed in Chapter 3. The `config/db.js` includes SQL to create tables and supports both MySQL and SQLite.
+
+\section{Authentication}
+Authentication is JWT-based. The backend exposes `/api/auth/register`, `/api/auth/login`, and `/api/auth/me`. On successful login/register a token is returned and stored by the frontend in `localStorage` under `skillbridge_token`.
+
+\section{APIs}
+A non-exhaustive list of endpoints (from `routes/`):
+\begin{longtable}{p{6cm}p{9cm}}
+\toprule
+Endpoint & Purpose \\
+\midrule
+`POST /api/auth/register` & Register a new user \\
+`POST /api/auth/login` & Authenticate and obtain JWT \\
+`GET /api/auth/me` & Get current user (protected) \\
+`GET /api/courses` & List courses \\
+`POST /api/courses` & Create course (teacher only) \\
+`POST /api/lessons` & Create lesson (teacher only) \\
+`POST /api/enrollments/:courseId` & Enroll student in course \\
+`POST /api/assignments` & Create assignment (teacher/admin) \\
+`POST /api/submissions/:assignmentId` & Submit assignment (student) \\
+`GET /api/admin/stats` & Admin statistics (admin only) \\
+\bottomrule
+\end{longtable}
+
+\section{Business logic}
+Business logic is implemented in controller modules. Examples include ensuring only teachers create courses, unique enrollment per student/course, and teacher/admin-only assignment grading.
+
+\section{CRUD operations}
+Courses, lessons, assignments, and categories all provide create/read/update/delete endpoints with appropriate role checks.
+
+\section{Security}
+Security features implemented:
+\begin{itemize}
+  \item Password hashing with `bcrypt` before storage.
+  \item JWT signed with `JWT_SECRET` for stateless authentication.
+  \item Role-based middleware to restrict routes.
+  \item CORS configuration to allow development origins and preflight handling.
+\end{itemize}
+
+\section{Validation and Error handling}
+Controllers return JSON error messages and `server.js` installs an error handler middleware returning error messages with HTTP 400 when an error is thrown.
+
+\section{File uploads}
+File uploads are handled via `multer` and stored in `uploads/` with static serving at `/uploads`.
+
+\section{External services}
+No external third-party services are required; the system uses local file storage for uploads and local MySQL for persistence.
+
+\section{Deployment preparation}
+The repository includes a build pipeline for the frontend (`npm run build`) and a `start` script for the backend. For production, configure environment variables and consider reverse proxy (e.g., Nginx) and HTTPS.
+
+\clearpage
+
+% Development timeline
+\chapter{Development Timeline}
+This section should be completed by the project author to reflect the actual dates and milestones. [To Be Completed]
+
+\clearpage
+
+% Technologies Used
+\chapter{Technologies Used}
+\section{Frontend}
+React (component-based UI), Vite (fast dev server), Bootstrap (styling), Axios (HTTP).
+
+\section{Backend}
+Node.js, Express, mysql2, sqlite3, multer, bcrypt, jsonwebtoken.
+
+\section{Why chosen}
+These technologies are well-documented, widely used in industry, and enable rapid development for student projects.
+
+\clearpage
+
+% Testing
+\chapter{Testing}
+\section{Methodology}
+No automated test suite found; tests were manual via the browser and API calls.
+
+\section{Test cases}
+Suggested test cases (examples):
+\begin{itemize}
+  \item Register new user and verify JWT returned.
+  \item Login with seeded accounts and verify dashboard access.
+  \item Teacher creates a course and adds lessons and assignment.
+  \item Student enrolls and submits assignment.
+  \item Teacher grades submission and student sees updated grade.
+\end{itemize}
+
+\section{Results}
+Actual recorded test interactions were performed during development (registration/login, CORS checks, seeding verification). Detailed test logs are not present in the repository. [To Be Completed for formal report]
+
+\section{Bugs encountered}
+Examples noted in development notes: port conflicts, CORS origin mismatches, and DB credential issues. Fixes included killing the offending process, updating CORS origins in `server.js`, and adjusting `.env.example`.
+
+\clearpage
+
+% Challenges
+\chapter{Challenges Encountered}
+\begin{itemize}
+  \item Database credential and permissions issues when using root vs dedicated user — solved by recommending a non-root `skillbridge_user` and providing SQL commands to create the user and grant privileges.
+  \item CORS blocking — resolved by configuring `cors` middleware with allowed origins and enabling preflight responses.
+  \item Local port conflict — resolved by identifying and killing the process holding the port before restarting the backend.
+\end{itemize}
+
+\clearpage
+
+% Results and Discussion
+\chapter{Results and Discussion}
+The implemented system meets the core objectives: role-based authentication, course and lesson management, enrollment, assignment submission, and admin functionality. Strengths include simple, clear architecture and workable persistence. Weaknesses: lack of automated tests, limited production deployment scripts, and basic UI polish.
+
+\clearpage
+
+% Conclusion and Recommendations
+\chapter{Conclusion}
+SkillBridge demonstrates a practical full-stack application appropriate for teaching and portfolio purposes. It integrates common web development concerns and provides a platform for further extension.
+
+\chapter{Recommendations}
+\begin{itemize}
+  \item Add automated tests (unit and integration).
+  \item Add Dockerization and CI/CD pipeline for reproducible deployment.
+  \item Improve UX and accessibility.
+  \item Add monitoring and logging for production readiness.
+\end{itemize}
+
+\chapter{Future Improvements}
+See Recommendations. Additional improvements: richer search, real-time features, and user notifications.
+
+\clearpage
+
+% References
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\clearpage
+
+% Appendices
+\appendix
+\chapter{Appendix A: Folder Structure}
+\begin{verbatim}
+(See the project root for full tree.)
+skillbridge-backend/
+  config/
+  controllers/
+  middleware/
+  routes/
+  uploads/
+  database/
+skillbridge-frontend/
+  src/
+    components/
+    pages/
+    services/
+    context/
+\end{verbatim}
+
+\chapter{Appendix B: Key Code Snippets}
+\section{server.js (abridged)}
+\begin{lstlisting}
+// server.js abridged
+const express = require('express');
+const cors = require('cors');
+const db = require('./config/db');
+
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use('/api/auth', authRoutes);
+// other routes
+
+startServer();
+\end{lstlisting}
+
+\section{AuthContext.jsx (abridged)}
+\begin{lstlisting}
+// AuthContext registers and stores JWT in localStorage
+localStorage.setItem('skillbridge_token', response.data.token);
+// AuthContext loads current user using authService.getCurrentUser()
+\end{lstlisting}
+
+\chapter{Appendix C: Database Schema}
+Important tables: `users`, `course_categories`, `courses`, `lessons`, `lesson_materials`, `enrollments`, `assignments`, `submissions`.
+
+\chapter{Appendix D: API Endpoints}
+See Chapter 4 for a compact table. Full routes are in `skillbridge-backend/routes/`.
+
+\chapter{Appendix E: Screenshots}
+Placeholder images and screenshots should be added by the author after running the app locally.
+
+\end{document}

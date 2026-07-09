@@ -1,4 +1,5 @@
 const dns = require('dns').promises;
+const net = require('net');
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -10,16 +11,20 @@ if (!connectionString) {
 function parseDatabaseUrl(urlString) {
   try {
     const url = new URL(urlString);
+    const isSupabase = url.hostname && url.hostname.includes('.supabase.co');
+    const useSsl = isSupabase || process.env.NODE_ENV === 'production';
+
     return {
       host: url.hostname,
       port: Number(url.port || 5432),
       user: decodeURIComponent(url.username),
       password: decodeURIComponent(url.password),
       database: url.pathname ? url.pathname.slice(1) : undefined,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      ssl: useSsl ? { rejectUnauthorized: false } : false
     };
   } catch (error) {
-    return { connectionString: urlString, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false };
+    const useSsl = process.env.NODE_ENV === 'production';
+    return { connectionString: urlString, ssl: useSsl ? { rejectUnauthorized: false } : false };
   }
 }
 
@@ -33,14 +38,16 @@ async function createPool() {
 
   const config = { ...poolConfig, max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 2000 };
 
-  if (process.env.NODE_ENV === 'production' && config.host && typeof config.host === 'string') {
+  if (config.host && typeof config.host === 'string' && net.isIP(config.host) === 0) {
     try {
-      const addresses = await dns.resolve4(config.host);
-      if (addresses && addresses.length > 0) {
-        config.host = addresses[0];
+      const lookupResult = await dns.lookup(config.host, { family: 4 });
+      if (lookupResult && lookupResult.address) {
+        console.log(`Resolved database host ${config.host} to IPv4 address ${lookupResult.address}`);
+        config.host = lookupResult.address;
       }
     } catch (error) {
-      console.warn('IPv4 lookup failed for database host:', error.message);
+      console.warn(`IPv4 lookup failed for database host ${config.host}:`, error.message);
+      console.warn('Continuing with original host. If Render is still resolving IPv6, enable NODE_ENV=production or force IPv4 resolution on the platform.');
     }
   }
 
