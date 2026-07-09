@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
@@ -48,12 +49,12 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Uploaded files are served statically so students can download lesson materials.
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const frontendDistPath = path.resolve(__dirname, '../skillbridge-frontend/dist');
+const frontendIndexFile = path.join(frontendDistPath, 'index.html');
 
-app.get('/', (req, res) => {
-  res.json({ message: 'SkillBridge API is running.' });
-});
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+}
 
 app.get('/health', async (req, res) => {
   try {
@@ -78,6 +79,18 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ message: err.message || 'Request failed.' });
   }
   return next();
+});
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+    return res.status(404).json({ message: 'Not found.' });
+  }
+
+  if (fs.existsSync(frontendIndexFile)) {
+    return res.sendFile(frontendIndexFile);
+  }
+
+  return res.json({ message: 'SkillBridge API is running.' });
 });
 
 async function startServer() {

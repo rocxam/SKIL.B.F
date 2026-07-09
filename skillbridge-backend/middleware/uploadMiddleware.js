@@ -1,23 +1,9 @@
-const path = require('path');
 const multer = require('multer');
 
 const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.png', '.jpg', '.jpeg', '.gif', '.txt'];
-const projectRoot = path.join(__dirname, '..');
-
-function createStorage(folder) {
-  return multer.diskStorage({
-    destination(req, file, cb) {
-      cb(null, path.join(__dirname, '..', 'uploads', folder));
-    },
-    filename(req, file, cb) {
-      const safeOriginalName = file.originalname.replace(/\s+/g, '-').toLowerCase();
-      cb(null, `${Date.now()}-${safeOriginalName}`);
-    }
-  });
-}
 
 function fileFilter(req, file, cb) {
-  const extension = path.extname(file.originalname).toLowerCase();
+  const extension = file.originalname ? file.originalname.slice(file.originalname.lastIndexOf('.')).toLowerCase() : '';
   if (!allowedExtensions.includes(extension)) {
     return cb(new Error('Unsupported file type.'));
   }
@@ -25,28 +11,21 @@ function fileFilter(req, file, cb) {
   return cb(null, true);
 }
 
-function toStoredPath(file) {
-  if (!file) {
-    return null;
-  }
-
-  return path.relative(projectRoot, file.path).replace(/\\/g, '/');
-}
+const memoryStorage = multer.memoryStorage();
 
 const uploadMaterial = multer({
-  storage: createStorage('materials'),
+  storage: memoryStorage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 const uploadSubmission = multer({
-  storage: createStorage('submissions'),
+  storage: memoryStorage,
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 module.exports = {
   uploadMaterial,
-  uploadSubmission,
-  toStoredPath
+  uploadSubmission
 };

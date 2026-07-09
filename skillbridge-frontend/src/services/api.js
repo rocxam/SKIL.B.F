@@ -3,7 +3,7 @@ import axios from 'axios';
 // All service files import this configured Axios instance.
 // The interceptor attaches the JWT so individual API calls stay short and readable.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+  baseURL: import.meta.env.VITE_API_URL || '/api'
 });
 
 api.interceptors.request.use((config) => {
@@ -14,5 +14,5 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export const uploadsBaseUrl = import.meta.env.VITE_UPLOADS_URL || 'http://localhost:5000';
+export const uploadsBaseUrl = import.meta.env.VITE_UPLOADS_URL || '';
 export default api;

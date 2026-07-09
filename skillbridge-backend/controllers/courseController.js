@@ -1,9 +1,10 @@
-const db = require('../config/db');
-const { toStoredPath } = require('../middleware/uploadMiddleware');
+const courseRepository = require('../repositories/courseRepository');
+const categoryRepository = require('../repositories/categoryRepository');
+const userRepository = require('../repositories/userRepository');
+const { uploadMaterialFile } = require('../services/storageService');
 
 async function findCourse(id) {
-  const courses = await db.query('SELECT * FROM courses WHERE id = ?', [id]);
-  return courses[0];
+  return courseRepository.findCourseById(id);
 }
 
 function canManageCourse(user, course) {
@@ -12,35 +13,13 @@ function canManageCourse(user, course) {
 
 async function getCourses(req, res) {
   try {
-    const { search = '', category = '', level = '' } = req.query;
-    const params = [];
-    let sql = `
-      SELECT c.*, u.full_name AS teacher_name, cat.name AS category_name,
-        COUNT(e.id) AS enrolled_students
-      FROM courses c
-      JOIN users u ON u.id = c.teacher_id
-      LEFT JOIN course_categories cat ON cat.id = c.category_id
-      LEFT JOIN enrollments e ON e.course_id = c.id AND e.status = 'active'
-      WHERE c.status = 'active'
-    `;
+    const filters = {
+      search: req.query.search || '',
+      category: req.query.category || '',
+      level: req.query.level || ''
+    };
 
-    if (search) {
-      sql += ' AND (c.title LIKE ? OR c.description LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
-    }
-
-    if (category) {
-      sql += ' AND c.category_id = ?';
-      params.push(category);
-    }
-
-    if (level) {
-      sql += ' AND c.level = ?';
-      params.push(level);
-    }
-
-    sql += ` GROUP BY c.id, c.teacher_id, c.category_id, c.title, c.description, c.level, c.duration, c.status, c.cover_image, c.created_at, c.updated_at, u.full_name, cat.name ORDER BY c.created_at DESC`;
-    const courses = await db.query(sql, params);
+    const courses = await courseRepository.listCourses(filters);
     return res.json(courses);
   } catch (error) {
     return res.status(500).json({ message: 'Could not load courses.', error: error.message });
@@ -49,20 +28,11 @@ async function getCourses(req, res) {
 
 async function getCourseById(req, res) {
   try {
-    const courses = await db.query(
-      `SELECT c.*, u.full_name AS teacher_name, cat.name AS category_name
-       FROM courses c
-       JOIN users u ON u.id = c.teacher_id
-       LEFT JOIN course_categories cat ON cat.id = c.category_id
-       WHERE c.id = ?`,
-      [req.params.id]
-    );
-
-    if (courses.length === 0) {
+    const course = await courseRepository.findCourseById(req.params.id);
+    if (!course) {
       return res.status(404).json({ message: 'Course not found.' });
     }
-
-    return res.json(courses[0]);
+    return res.json(course);
   } catch (error) {
     return res.status(500).json({ message: 'Could not load course.', error: error.message });
   }
@@ -71,18 +41,21 @@ async function getCourseById(req, res) {
 async function createCourse(req, res) {
   try {
     const { category_id, title, description, level, duration } = req.body;
-
     if (!title || !description) {
       return res.status(400).json({ message: 'Title and description are required.' });
     }
 
-    const result = await db.query(
-      `INSERT INTO courses (teacher_id, category_id, title, description, level, duration, cover_image)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.id, category_id || null, title, description, level || 'Beginner', duration || null, toStoredPath(req.file)]
-    );
+    const coverImage = req.file ? await uploadMaterialFile(req.file) : null;
+    const course = await courseRepository.createCourse({
+      teacher_id: req.user.id,
+      category_id: category_id || null,
+      title,
+      description,
+      level: level || 'Beginner',
+      duration: duration || null,
+      cover_image: coverImage ? coverImage.file_url : null
+    });
 
-    const course = await findCourse(result.insertId);
     return res.status(201).json({ message: 'Course created.', course });
   } catch (error) {
     return res.status(500).json({ message: 'Could not create course.', error: error.message });
@@ -101,23 +74,18 @@ async function updateCourse(req, res) {
     }
 
     const { category_id, title, description, level, duration, status } = req.body;
-    await db.query(
-      `UPDATE courses
-       SET category_id = ?, title = ?, description = ?, level = ?, duration = ?, status = ?, cover_image = COALESCE(?, cover_image)
-       WHERE id = ?`,
-      [
-        category_id || null,
-        title || course.title,
-        description || course.description,
-        level || course.level,
-        duration || course.duration,
-        status || course.status,
-        toStoredPath(req.file),
-        req.params.id
-      ]
-    );
+    const coverImage = req.file ? await uploadMaterialFile(req.file) : null;
+    const updatedCourse = await courseRepository.updateCourse(req.params.id, {
+      category_id: category_id || null,
+      title,
+      description,
+      level,
+      duration,
+      status,
+      cover_image: coverImage ? coverImage.file_url : null
+    });
 
-    return res.json({ message: 'Course updated.', course: await findCourse(req.params.id) });
+    return res.json({ message: 'Course updated.', course: updatedCourse });
   } catch (error) {
     return res.status(500).json({ message: 'Could not update course.', error: error.message });
   }
@@ -134,7 +102,7 @@ async function deleteCourse(req, res) {
       return res.status(403).json({ message: 'You can only delete your own courses.' });
     }
 
-    await db.query('UPDATE courses SET status = ? WHERE id = ?', ['inactive', req.params.id]);
+    await courseRepository.deactivateCourse(req.params.id);
     return res.json({ message: 'Course deactivated.' });
   } catch (error) {
     return res.status(500).json({ message: 'Could not delete course.', error: error.message });
@@ -143,18 +111,7 @@ async function deleteCourse(req, res) {
 
 async function getMyCourses(req, res) {
   try {
-    const courses = await db.query(
-      `SELECT c.id, c.teacher_id, c.category_id, c.title, c.description, c.level, c.duration, c.status, c.cover_image, c.created_at, c.updated_at,
-              cat.name AS category_name, COUNT(e.id) AS enrolled_students
-       FROM courses c
-       LEFT JOIN course_categories cat ON cat.id = c.category_id
-       LEFT JOIN enrollments e ON e.course_id = c.id AND e.status = 'active'
-       WHERE c.teacher_id = ?
-       GROUP BY c.id, c.teacher_id, c.category_id, c.title, c.description, c.level, c.duration, c.status, c.cover_image, c.created_at, c.updated_at, cat.name
-       ORDER BY c.created_at DESC`,
-      [req.user.id]
-    );
-
+    const courses = await courseRepository.listTeacherCourses(req.user.id);
     return res.json(courses);
   } catch (error) {
     return res.status(500).json({ message: 'Could not load teacher courses.', error: error.message });
@@ -163,10 +120,7 @@ async function getMyCourses(req, res) {
 
 async function getCategories(req, res) {
   try {
-    const categories = await db.query(
-      'SELECT * FROM course_categories WHERE status = ? ORDER BY name',
-      ['active']
-    );
+    const categories = await categoryRepository.listCategories();
     return res.json(categories);
   } catch (error) {
     return res.status(500).json({ message: 'Could not load categories.', error: error.message });

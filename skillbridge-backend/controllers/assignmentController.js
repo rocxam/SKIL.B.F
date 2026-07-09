@@ -1,11 +1,10 @@
-const db = require('../config/db');
-const { toStoredPath } = require('../middleware/uploadMiddleware');
-const { findCourse, canManageCourse } = require('./courseController');
+const assignmentRepository = require('../repositories/assignmentRepository');
+const courseRepository = require('../repositories/courseRepository');
+const { uploadMaterialFile } = require('../services/storageService');
 const { canAccessCourse } = require('./lessonController');
 
 async function findAssignment(id) {
-  const assignments = await db.query('SELECT * FROM assignments WHERE id = ?', [id]);
-  return assignments[0];
+  return assignmentRepository.findAssignment(id);
 }
 
 async function createAssignment(req, res) {
@@ -15,22 +14,27 @@ async function createAssignment(req, res) {
       return res.status(400).json({ message: 'Course, title, and instructions are required.' });
     }
 
-    const course = await findCourse(course_id);
+    const course = await courseRepository.findCourseById(course_id);
     if (!course) {
       return res.status(404).json({ message: 'Course not found.' });
     }
 
-    if (!canManageCourse(req.user, course)) {
+    if (!canAccessCourse(req.user, course) && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'You can only create assignments for your own courses.' });
     }
 
-    const result = await db.query(
-      `INSERT INTO assignments (course_id, teacher_id, title, instructions, due_date, total_marks, attachment)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [course_id, req.user.id, title, instructions, due_date || null, total_marks || 100, toStoredPath(req.file)]
-    );
+    const attachment = req.file ? await uploadMaterialFile(req.file) : null;
+    const assignment = await assignmentRepository.createAssignment({
+      course_id,
+      teacher_id: req.user.id,
+      title,
+      instructions,
+      due_date: due_date || null,
+      total_marks: total_marks || 100,
+      attachment: attachment ? attachment.file_url : null
+    });
 
-    return res.status(201).json({ message: 'Assignment created.', assignment_id: result.insertId });
+    return res.status(201).json({ message: 'Assignment created.', assignment });
   } catch (error) {
     return res.status(500).json({ message: 'Could not create assignment.', error: error.message });
   }
@@ -38,7 +42,7 @@ async function createAssignment(req, res) {
 
 async function getAssignmentsByCourse(req, res) {
   try {
-    const course = await findCourse(req.params.courseId);
+    const course = await courseRepository.findCourseById(req.params.courseId);
     if (!course) {
       return res.status(404).json({ message: 'Course not found.' });
     }
@@ -47,10 +51,7 @@ async function getAssignmentsByCourse(req, res) {
       return res.status(403).json({ message: 'You cannot view assignments for this course.' });
     }
 
-    const assignments = await db.query(
-      'SELECT * FROM assignments WHERE course_id = ? AND status = ? ORDER BY due_date ASC',
-      [req.params.courseId, 'active']
-    );
+    const assignments = await assignmentRepository.listAssignmentsByCourse(req.params.courseId);
     return res.json(assignments);
   } catch (error) {
     return res.status(500).json({ message: 'Could not load assignments.', error: error.message });
@@ -64,7 +65,7 @@ async function getAssignmentById(req, res) {
       return res.status(404).json({ message: 'Assignment not found.' });
     }
 
-    const course = await findCourse(assignment.course_id);
+    const course = await courseRepository.findCourseById(assignment.course_id);
     if (!(await canAccessCourse(req.user, course))) {
       return res.status(403).json({ message: 'You cannot view this assignment.' });
     }
@@ -82,28 +83,23 @@ async function updateAssignment(req, res) {
       return res.status(404).json({ message: 'Assignment not found.' });
     }
 
-    const course = await findCourse(assignment.course_id);
-    if (!canManageCourse(req.user, course)) {
+    const course = await courseRepository.findCourseById(assignment.course_id);
+    if (!canAccessCourse(req.user, course) && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'You can only edit assignments for your own courses.' });
     }
 
     const { title, instructions, due_date, total_marks, status } = req.body;
-    await db.query(
-      `UPDATE assignments
-       SET title = ?, instructions = ?, due_date = ?, total_marks = ?, status = ?, attachment = COALESCE(?, attachment)
-       WHERE id = ?`,
-      [
-        title || assignment.title,
-        instructions || assignment.instructions,
-        due_date || assignment.due_date,
-        total_marks || assignment.total_marks,
-        status || assignment.status,
-        toStoredPath(req.file),
-        req.params.id
-      ]
-    );
+    const attachment = req.file ? await uploadMaterialFile(req.file) : null;
+    const updatedAssignment = await assignmentRepository.updateAssignment(req.params.id, {
+      title,
+      instructions,
+      due_date,
+      total_marks,
+      status,
+      attachment: attachment ? attachment.file_url : null
+    });
 
-    return res.json({ message: 'Assignment updated.' });
+    return res.json({ message: 'Assignment updated.', assignment: updatedAssignment });
   } catch (error) {
     return res.status(500).json({ message: 'Could not update assignment.', error: error.message });
   }
@@ -116,12 +112,12 @@ async function deleteAssignment(req, res) {
       return res.status(404).json({ message: 'Assignment not found.' });
     }
 
-    const course = await findCourse(assignment.course_id);
-    if (!canManageCourse(req.user, course)) {
+    const course = await courseRepository.findCourseById(assignment.course_id);
+    if (!canAccessCourse(req.user, course) && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'You can only delete assignments for your own courses.' });
     }
 
-    await db.query('UPDATE assignments SET status = ? WHERE id = ?', ['inactive', req.params.id]);
+    await assignmentRepository.deactivateAssignment(req.params.id);
     return res.json({ message: 'Assignment deactivated.' });
   } catch (error) {
     return res.status(500).json({ message: 'Could not delete assignment.', error: error.message });

@@ -1,13 +1,15 @@
-const db = require('../config/db');
-const { toStoredPath } = require('../middleware/uploadMiddleware');
-const { findCourse, canManageCourse } = require('./courseController');
+const lessonRepository = require('../repositories/lessonRepository');
+const lessonMaterialRepository = require('../repositories/lessonMaterialRepository');
+const courseRepository = require('../repositories/courseRepository');
+const { uploadMaterialFile } = require('../services/storageService');
 
 async function studentIsEnrolled(studentId, courseId) {
-  const rows = await db.query(
-    'SELECT id FROM enrollments WHERE student_id = ? AND course_id = ? AND status = ?',
-    [studentId, courseId, 'active']
-  );
-  return rows.length > 0;
+  const enrollment = await require('../repositories/enrollmentRepository').getEnrollment(studentId, courseId);
+  return Boolean(enrollment && enrollment.status === 'active');
+}
+
+function canManageCourse(user, course) {
+  return user.role === 'admin' || (user.role === 'teacher' && course.teacher_id === user.id);
 }
 
 async function canAccessCourse(user, course) {
@@ -24,10 +26,13 @@ async function canAccessCourse(user, course) {
 
 async function insertMaterials(lessonId, files = []) {
   for (const file of files) {
-    await db.query(
-      'INSERT INTO lesson_materials (lesson_id, file_name, file_path, file_type) VALUES (?, ?, ?, ?)',
-      [lessonId, file.originalname, toStoredPath(file), file.originalname.split('.').pop() || 'file']
-    );
+    const uploaded = await uploadMaterialFile(file);
+    await lessonMaterialRepository.insertMaterial({
+      lesson_id: lessonId,
+      file_name: file.originalname,
+      file_path: uploaded.file_url,
+      file_type: uploaded.file_type
+    });
   }
 }
 
@@ -38,7 +43,7 @@ async function createLesson(req, res) {
       return res.status(400).json({ message: 'Course and lesson title are required.' });
     }
 
-    const course = await findCourse(course_id);
+    const course = await courseRepository.findCourseById(course_id);
     if (!course) {
       return res.status(404).json({ message: 'Course not found.' });
     }
@@ -47,13 +52,15 @@ async function createLesson(req, res) {
       return res.status(403).json({ message: 'You can only add lessons to your own courses.' });
     }
 
-    const result = await db.query(
-      'INSERT INTO lessons (course_id, title, content, lesson_order) VALUES (?, ?, ?, ?)',
-      [course_id, title, content || '', lesson_order || 1]
-    );
-    await insertMaterials(result.insertId, req.files);
+    const lesson = await lessonRepository.createLesson({
+      course_id,
+      title,
+      content: content || '',
+      lesson_order: lesson_order || 1
+    });
 
-    return res.status(201).json({ message: 'Lesson created.', lesson_id: result.insertId });
+    await insertMaterials(lesson.id, req.files);
+    return res.status(201).json({ message: 'Lesson created.', lesson });
   } catch (error) {
     return res.status(500).json({ message: 'Could not create lesson.', error: error.message });
   }
@@ -61,7 +68,7 @@ async function createLesson(req, res) {
 
 async function getLessonsByCourse(req, res) {
   try {
-    const course = await findCourse(req.params.courseId);
+    const course = await courseRepository.findCourseById(req.params.courseId);
     if (!course) {
       return res.status(404).json({ message: 'Course not found.' });
     }
@@ -70,13 +77,9 @@ async function getLessonsByCourse(req, res) {
       return res.status(403).json({ message: 'Enroll in this course to view lessons.' });
     }
 
-    const lessons = await db.query(
-      'SELECT * FROM lessons WHERE course_id = ? AND status = ? ORDER BY lesson_order ASC',
-      [req.params.courseId, 'active']
-    );
-
+    const lessons = await lessonRepository.listLessonsByCourse(req.params.courseId);
     for (const lesson of lessons) {
-      lesson.materials = await db.query('SELECT * FROM lesson_materials WHERE lesson_id = ?', [lesson.id]);
+      lesson.materials = await lessonMaterialRepository.listMaterialsByLesson(lesson.id);
     }
 
     return res.json(lessons);
@@ -87,18 +90,18 @@ async function getLessonsByCourse(req, res) {
 
 async function getLessonById(req, res) {
   try {
-    const lessons = await db.query('SELECT * FROM lessons WHERE id = ?', [req.params.id]);
-    if (lessons.length === 0) {
+    const lesson = await lessonRepository.findLessonById(req.params.id);
+    if (!lesson) {
       return res.status(404).json({ message: 'Lesson not found.' });
     }
 
-    const course = await findCourse(lessons[0].course_id);
+    const course = await courseRepository.findCourseById(lesson.course_id);
     if (!(await canAccessCourse(req.user, course))) {
       return res.status(403).json({ message: 'You cannot view this lesson.' });
     }
 
-    lessons[0].materials = await db.query('SELECT * FROM lesson_materials WHERE lesson_id = ?', [req.params.id]);
-    return res.json(lessons[0]);
+    lesson.materials = await lessonMaterialRepository.listMaterialsByLesson(lesson.id);
+    return res.json(lesson);
   } catch (error) {
     return res.status(500).json({ message: 'Could not load lesson.', error: error.message });
   }
@@ -106,24 +109,26 @@ async function getLessonById(req, res) {
 
 async function updateLesson(req, res) {
   try {
-    const lessons = await db.query('SELECT * FROM lessons WHERE id = ?', [req.params.id]);
-    if (lessons.length === 0) {
+    const lesson = await lessonRepository.findLessonById(req.params.id);
+    if (!lesson) {
       return res.status(404).json({ message: 'Lesson not found.' });
     }
 
-    const course = await findCourse(lessons[0].course_id);
+    const course = await courseRepository.findCourseById(lesson.course_id);
     if (!canManageCourse(req.user, course)) {
       return res.status(403).json({ message: 'You can only edit lessons for your own courses.' });
     }
 
     const { title, content, lesson_order, status } = req.body;
-    await db.query(
-      'UPDATE lessons SET title = ?, content = ?, lesson_order = ?, status = ? WHERE id = ?',
-      [title || lessons[0].title, content || lessons[0].content, lesson_order || lessons[0].lesson_order, status || lessons[0].status, req.params.id]
-    );
-    await insertMaterials(req.params.id, req.files);
+    const updatedLesson = await lessonRepository.updateLesson(req.params.id, {
+      title,
+      content,
+      lesson_order,
+      status
+    });
 
-    return res.json({ message: 'Lesson updated.' });
+    await insertMaterials(req.params.id, req.files);
+    return res.json({ message: 'Lesson updated.', lesson: updatedLesson });
   } catch (error) {
     return res.status(500).json({ message: 'Could not update lesson.', error: error.message });
   }
@@ -131,17 +136,17 @@ async function updateLesson(req, res) {
 
 async function deleteLesson(req, res) {
   try {
-    const lessons = await db.query('SELECT * FROM lessons WHERE id = ?', [req.params.id]);
-    if (lessons.length === 0) {
+    const lesson = await lessonRepository.findLessonById(req.params.id);
+    if (!lesson) {
       return res.status(404).json({ message: 'Lesson not found.' });
     }
 
-    const course = await findCourse(lessons[0].course_id);
+    const course = await courseRepository.findCourseById(lesson.course_id);
     if (!canManageCourse(req.user, course)) {
       return res.status(403).json({ message: 'You can only delete lessons for your own courses.' });
     }
 
-    await db.query('UPDATE lessons SET status = ? WHERE id = ?', ['inactive', req.params.id]);
+    await lessonRepository.deactivateLesson(req.params.id);
     return res.json({ message: 'Lesson deactivated.' });
   } catch (error) {
     return res.status(500).json({ message: 'Could not delete lesson.', error: error.message });

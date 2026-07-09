@@ -16,11 +16,17 @@ export default function LessonList({ lessons }) {
           <p className="mb-2 text-muted">{lesson.content}</p>
           {lesson.materials?.length > 0 && (
             <div className="d-flex flex-wrap gap-2">
-              {lesson.materials.map((material) => (
-                <a className="btn btn-outline-secondary btn-sm" href={`${uploadsBaseUrl}/${material.file_path}`} key={material.id} target="_blank" rel="noreferrer">
-                  Download {material.file_name}
-                </a>
-              ))}
+              {lesson.materials.map((material) => {
+                const downloadUrl = material.file_path?.startsWith('http')
+                  ? material.file_path
+                  : `${uploadsBaseUrl.replace(/\/$/, '')}/${material.file_path.replace(/^\/+/, '')}`;
+
+                return (
+                  <a className="btn btn-outline-secondary btn-sm" href={downloadUrl} key={material.id} target="_blank" rel="noreferrer">
+                    Download {material.file_name}
+                  </a>
+                );
+              })}
             </div>
           )}
         </div>
