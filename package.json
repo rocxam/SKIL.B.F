@@ -1,0 +1,9 @@
+{
+  "name": "skillbridge",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd skillbridge-backend && npm install && npm run build",
+    "start": "cd skillbridge-backend && npm start"
+  }
+}
