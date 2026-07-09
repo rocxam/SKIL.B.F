@@ -4,6 +4,7 @@
   "description": "SkillBridge Express and MariaDB backend API",
   "main": "server.js",
   "scripts": {
+    "build": "cd ../skillbridge-frontend && npm install && npm run build",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
