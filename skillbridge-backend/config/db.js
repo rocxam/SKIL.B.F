@@ -1,4 +1,4 @@
-const dns = require('dns');
+const dns = require('dns').promises;
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -16,15 +16,7 @@ function parseDatabaseUrl(urlString) {
       user: decodeURIComponent(url.username),
       password: decodeURIComponent(url.password),
       database: url.pathname ? url.pathname.slice(1) : undefined,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-      lookup: (hostname, options, callback) => {
-        dns.resolve4(hostname, (error, addresses) => {
-          if (error) {
-            return callback(error);
-          }
-          return callback(null, addresses[0], 4);
-        });
-      }
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     };
   } catch (error) {
     return { connectionString: urlString, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false };
@@ -32,21 +24,40 @@ function parseDatabaseUrl(urlString) {
 }
 
 const poolConfig = parseDatabaseUrl(connectionString);
-const pool = new Pool({
-  ...poolConfig,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000
-});
+let pool;
+
+async function createPool() {
+  if (pool) {
+    return pool;
+  }
+
+  const config = { ...poolConfig, max: 20, idleTimeoutMillis: 30000, connectionTimeoutMillis: 2000 };
+
+  if (process.env.NODE_ENV === 'production' && config.host && typeof config.host === 'string') {
+    try {
+      const addresses = await dns.resolve4(config.host);
+      if (addresses && addresses.length > 0) {
+        config.host = addresses[0];
+      }
+    } catch (error) {
+      console.warn('IPv4 lookup failed for database host:', error.message);
+    }
+  }
+
+  pool = new Pool(config);
+  return pool;
+}
 
 async function query(text, params) {
-  const result = await pool.query(text, params);
+  const client = await createPool();
+  const result = await client.query(text, params);
   return result;
 }
 
 async function initialize() {
-  const client = await pool.connect();
-  client.release();
+  const client = await createPool();
+  const connection = await client.connect();
+  connection.release();
 }
 
 async function testConnection() {
