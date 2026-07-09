@@ -1,3 +1,4 @@
+const dns = require('dns');
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -6,9 +7,28 @@ if (!connectionString) {
   throw new Error('DATABASE_URL or SUPABASE_DATABASE_URL must be set.');
 }
 
+function parseDatabaseUrl(urlString) {
+  try {
+    const url = new URL(urlString);
+    return {
+      host: url.hostname,
+      port: Number(url.port || 5432),
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      database: url.pathname ? url.pathname.slice(1) : undefined,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      lookup: (hostname, options, callback) => {
+        dns.lookup(hostname, { ...options, family: 4 }, callback);
+      }
+    };
+  } catch (error) {
+    return { connectionString: urlString, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false };
+  }
+}
+
+const poolConfig = parseDatabaseUrl(connectionString);
 const pool = new Pool({
-  connectionString,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ...poolConfig,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000
