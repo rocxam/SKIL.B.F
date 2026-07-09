@@ -18,7 +18,12 @@ function parseDatabaseUrl(urlString) {
       database: url.pathname ? url.pathname.slice(1) : undefined,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       lookup: (hostname, options, callback) => {
-        dns.lookup(hostname, { ...options, family: 4 }, callback);
+        dns.resolve4(hostname, (error, addresses) => {
+          if (error) {
+            return callback(error);
+          }
+          return callback(null, addresses[0], 4);
+        });
       }
     };
   } catch (error) {
