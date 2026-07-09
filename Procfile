@@ -1,1 +1,1 @@
-web: cd skillbridge-backend && npm start
+web: cd skillbridge-backend && npm run start:prod

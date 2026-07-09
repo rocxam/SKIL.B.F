@@ -6,7 +6,9 @@ services:
     branch: main
     repo: https://github.com/rocxam/SKIL.B.F.git
     buildCommand: cd skillbridge-backend && npm run build
-    startCommand: cd skillbridge-backend && npm start
+    startCommand: cd skillbridge-backend && npm run start:prod
     plan: free
     autoDeploy: true
-    envVars: []
+    envVars:
+      - key: NODE_ENV
+        value: production
