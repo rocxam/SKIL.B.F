@@ -22,23 +22,32 @@ const allowedOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || 
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-const corsOptions = {
-  origin(origin, callback) {
-    // Browsers send an Origin header. Non-browser tools may omit it.
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+let corsMiddleware;
+if (process.env.NODE_ENV === 'production') {
+  // In production allow the request origin dynamically so same-origin requests
+  // from the rendered site are accepted even when FRONTEND_URL is not set.
+  corsMiddleware = cors({ origin: true, credentials: true });
+} else {
+  const corsOptions = {
+    origin(origin, callback) {
+      // Browsers send an Origin header. Non-browser tools may omit it.
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-    return callback(new Error(`CORS blocked request from origin: ${origin}`));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 204
-};
+      return callback(new Error(`CORS blocked request from origin: ${origin}`));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 204
+  };
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+  corsMiddleware = cors(corsOptions);
+}
+
+app.use(corsMiddleware);
+app.options('*', corsMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -46,7 +55,10 @@ const frontendDistPath = path.resolve(__dirname, '../skillbridge-frontend/dist')
 const frontendIndexFile = path.join(frontendDistPath, 'index.html');
 
 if (fs.existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
+  app.use(express.static(frontendDistPath, {
+    index: false,
+    maxAge: '1d'
+  }));
 }
 
 app.get('/health', async (req, res) => {
