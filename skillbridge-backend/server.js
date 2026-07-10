@@ -51,6 +51,12 @@ app.options('*', corsMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const uploadsPath = path.resolve(__dirname, 'uploads');
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+}
+app.use(express.static(uploadsPath));
+
 const frontendDistPath = path.resolve(__dirname, '../skillbridge-frontend/dist');
 const frontendIndexFile = path.join(frontendDistPath, 'index.html');
 

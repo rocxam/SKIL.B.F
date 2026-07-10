@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "cd skillbridge-backend && npm install && npm run build",
-    "start": "cd skillbridge-backend && npm run start"
+    "seed": "cd skillbridge-backend && npm run seed:postgres",
+    "start": "cd skillbridge-backend && npm run seed:postgres && npm run start"
   }
 }

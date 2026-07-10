@@ -14,6 +14,11 @@ INSERT INTO users (id, full_name, email, phone, password, role) VALUES
 (2, 'Grace Namatovu', 'grace.teacher@skillbridge.test', '+256700000002', '$2b$10$BfToyXvaxlWouNXenDzBf.Usq8zWDvZx0xLYYtUKwT3LO.N56crXy', 'teacher')
 ON CONFLICT (id) DO NOTHING;
 
+-- Sample student for enrollments and submissions
+INSERT INTO users (id, full_name, email, phone, password, role) VALUES
+(5, 'Sample Student', 'student@example.com', NULL, '$2b$10$BfToyXvaxlWouNXenDzBf.Usq8zWDvZx0xLYYtUKwT3LO.N56crXy', 'student')
+ON CONFLICT (id) DO NOTHING;
+
 -- Categories
 INSERT INTO course_categories (id, name, description) VALUES
 (1, 'Web Development', 'Frontend and backend web application development.')
@@ -32,6 +37,11 @@ ON CONFLICT (id) DO NOTHING;
 -- Assignments
 INSERT INTO assignments (id, course_id, teacher_id, title, instructions, due_date, total_marks) VALUES
 (1, 1, 2, 'Build a Course Card Component', 'Create a reusable React component that displays course details.', '2026-07-15', 100)
+ON CONFLICT (id) DO NOTHING;
+
+-- Lesson materials
+INSERT INTO lesson_materials (id, lesson_id, file_name, file_path, file_type) VALUES
+(1, 1, 'sample-course-card.txt', 'materials/sample-course-card.txt', 'text/plain')
 ON CONFLICT (id) DO NOTHING;
 
 -- Enrollments

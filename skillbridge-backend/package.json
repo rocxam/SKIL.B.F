@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "build": "cd ../skillbridge-frontend && npm install && npm run build",
+    "seed:postgres": "node scripts/seed_postgres.js",
     "start": "node server.js",
     "start:prod": "node server.js",
     "dev": "nodemon server.js"
