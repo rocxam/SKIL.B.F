@@ -90,14 +90,15 @@ async function startServer() {
   try {
     await db.initialize();
     await db.testConnection();
-    app.listen(PORT, () => {
-      console.log(`SkillBridge backend running on port ${PORT}`);
-      console.log('Database connection is available.');
-    });
+    console.log('Database connection is available.');
   } catch (error) {
-    console.error('Server startup failed:', error.message);
+    console.error('Database connection failed:', error.message);
     process.exit(1);
   }
+
+  app.listen(PORT, () => {
+    console.log(`SkillBridge backend running on port ${PORT}`);
+  });
 }
 
 startServer();

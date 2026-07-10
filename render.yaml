@@ -5,10 +5,12 @@ services:
     region: oregon
     branch: main
     repo: https://github.com/rocxam/SKIL.B.F.git
-    buildCommand: cd skillbridge-backend && npm run build
-    startCommand: cd skillbridge-backend && npm run start:prod
+    buildCommand: npm run build
+    startCommand: npm start
     plan: free
     autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL
+        value: postgresql://postgres.iiwchrsipxvhdgfzbdbr:xuTpAfF9XKeNjLSL@aws-0-eu-north-1.pooler.supabase.com:6543/postgres

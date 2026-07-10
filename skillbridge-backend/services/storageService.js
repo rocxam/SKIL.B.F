@@ -21,6 +21,10 @@ async function uploadFile(bucket, folder, file) {
     return null;
   }
 
+  if (!supabase) {
+    throw new Error('Supabase storage is not configured.');
+  }
+
   const storagePath = buildStoragePath(folder, file.originalname);
   const { error } = await supabase.storage
     .from(bucket)
