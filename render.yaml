@@ -14,3 +14,5 @@ services:
         value: production
       - key: DATABASE_URL
         value: postgresql://postgres.iiwchrsipxvhdgfzbdbr:xuTpAfF9XKeNjLSL@aws-0-eu-north-1.pooler.supabase.com:6543/postgres
+      - key: FRONTEND_URL
+        value: https://skillbridge-xped.onrender.com
